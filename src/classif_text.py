@@ -17,6 +17,7 @@ import argparse
 from collections import defaultdict
 import os
 import subprocess
+import string
 import codecs
 import sys
 import glob
@@ -52,6 +53,8 @@ def Info(output='', ending='\n'):  # print(output, file=sys.stderr)
 
 #######################################
 # variables
+separator = '%#%#%#%#\n'
+message_class = 'class_20ng:'
 
 
 #########################################
@@ -102,7 +105,7 @@ args = parser.parse_args()
 Info('Reading stop word file')
 
 t_stopwords = []
-with codecs.open('stop_words.en.txt', 'r', 'utf-8') as file:
+with codecs.open(args.file_stop, 'r', 'utf-8') as file:
     t_stopwords = file.read().splitlines()
 print('Stop word file has been loaded ({} words)'.format(len(t_stopwords)))
 
@@ -115,13 +118,70 @@ def Tokenize(text):
     t_words = []
     # TODO
     # split into words, do not forget to remove punctuation and carriage return...
-
+    translator = text.maketrans('', '', string.punctuation)
+    t_words = text.translate(translator).split()
     return t_words
 
 
 h_word2did2tf = defaultdict(lambda: defaultdict(lambda: 0))
 h_train_id2real_class = {}
 # TODO read the training data
+#str_test = "hello  world\n my name, is thomas."
+#print(Tokenize(str_test))
+with codecs.open(args.file_train,'r', 'utf-8') as fp:
+    t_messages = {}
+    message = []
+    message_number = 0
+    message_label = ''
+
+    for line in fp:
+        current_message_class = ''
+        m = re.search('^class_20ng:.',line)
+        
+
+        if m is not None:
+            # Classe trouvée - Début de message
+            message_label = 'msg_{}'.format(message_number)
+
+            t_class_str = line.split('class_20ng: ')
+            h_train_id2real_class[message_label] = t_class_str[1]
+
+        elif line == separator:
+            # Séparateur trouvé - Fin de message
+            t_messages[message_label] = message
+            message_number += 1
+            message = []
+        else:
+            # Corps trouvé
+            message.append(line)
+
+    print(len(t_messages))
+
+    #fp_str = fp.read()
+    #t_messages = fp_str.split(separator)
+    
+    # Nombre de messages
+    # print(len(t_messages))
+    # message_number = 0
+    for message_label in t_messages:
+        t_message_lines = t_messages[message_label]
+        message = ''
+        message_words = []
+        for line in t_message_lines:
+            message_words = message_words + (Tokenize(line))
+            #print(message_words)
+
+        for message_word in message_words:
+            if not message_word in t_stopwords:
+                h_word2did2tf[message_word][message_label] += 1
+
+
+    print(h_word2did2tf['number'])
+
+        # message_words = Tokenize()
+        # for message_word in message_words:
+        #     if not message_word in stopwords:
+        #         h_word2did2tf[message_label][message_word] += 1
 
 
 ##################################################################
