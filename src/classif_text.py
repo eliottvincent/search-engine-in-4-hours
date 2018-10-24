@@ -120,6 +120,36 @@ def Compute_Norm(word2did2tf, word2IDF):
     return norm
 
 
+def Parse_Data(data_file):
+    t_messages = {}
+    h_id2real_class = {}
+    message_nb = 0
+    with codecs.open(data_file, 'r', 'utf-8') as fp:
+        message = []
+        message_label = ''
+
+        for line in fp:
+            current_message_class = ''
+            m = re.search('^class_20ng: (.+)', line)
+
+            if m is not None:
+                # Classe trouvée - Début de message
+                message_label = 'msg_{}'.format(message_nb)
+
+                t_class_str = line.split('class_20ng: ')
+                h_id2real_class[message_label] = t_class_str[1]
+
+            elif line == separator:
+                # Séparateur trouvé - Fin de message
+                t_messages[message_label] = message
+                message_nb += 1
+                message = []
+            else:
+                # Corps trouvé
+                message.append(line)
+    return t_messages, h_id2real_class
+
+
 ################################################################################
 ################################################################################
 ##                                                                            ##
@@ -127,7 +157,7 @@ def Compute_Norm(word2did2tf, word2IDF):
 ##                                                                            ##
 ################################################################################
 ################################################################################
-    ##################################################################
+##################################################################
 Info('Reading stop word file')
 
 t_stopwords = []
@@ -150,57 +180,23 @@ def Tokenize(text):
 
 
 h_word2did2tf = defaultdict(lambda: defaultdict(lambda: 0))
-h_train_id2real_class = {}
-# TODO read the training data
-#str_test = "hello  world\n my name, is thomas."
-# print(Tokenize(str_test))
-with codecs.open(args.file_train, 'r', 'utf-8') as fp:
-    t_messages = {}
-    message = []
-    message_label = ''
 
-    for line in fp:
-        current_message_class = ''
-        m = re.search('^class_20ng: (.+)', line)
+t_messages, h_train_id2real_class = Parse_Data(args.file_train)
+message_number = len(t_messages)
 
-        if m is not None:
-            # Classe trouvée - Début de message
-            message_label = 'msg_{}'.format(message_number)
 
-            t_class_str = line.split('class_20ng: ')
-            h_train_id2real_class[message_label] = t_class_str[1]
+for message_label in t_messages:
+    t_message_lines = t_messages[message_label]
+    message = ''
+    message_words = []
+    for line in t_message_lines:
+        message_words = message_words + (Tokenize(line))
+        # print(message_words)
+    for message_word in message_words:
+        h_word2did2tf[message_word][message_label] += 1
 
-        elif line == separator:
-            # Séparateur trouvé - Fin de message
-            t_messages[message_label] = message
-            message_number += 1
-            message = []
-        else:
-            # Corps trouvé
-            message.append(line)
-
-    print(len(t_messages))
-
-    #fp_str = fp.read()
-    #t_messages = fp_str.split(separator)
-
-    # Nombre de messages
-    # print(len(t_messages))
-    # message_number = 0
-    for message_label in t_messages:
-        t_message_lines = t_messages[message_label]
-        message = ''
-        message_words = []
-        for line in t_message_lines:
-            message_words = message_words + (Tokenize(line))
-            # print(message_words)
-
-        for message_word in message_words:
-            # Removing stopwords form inverted file
-            h_word2did2tf[message_word][message_label] += 1
-
-    # print(h_word2did2tf['number'])
-    print(h_train_id2real_class['msg_8305'])
+# print(h_word2did2tf['number'])
+print(h_train_id2real_class['msg_8305'])
 
 
 ##################################################################
@@ -235,18 +231,13 @@ def Find_closest_neighbours(text, k=1):
     # find the k nearest neighbour (cosine with TF.IDF) of a test message
 
     h_train_id2score = defaultdict(lambda: 0)
-    # TO DO : compute the cosine for the training messages
-    t_words = Tokenize(text)
-    print(t_words)
 
-    for word in h_word2did2tf:
-        if word in t_words:
+    for word in text:
+        if word in h_word2did2tf:
             for message_label in h_word2did2tf[word]:
                 # On prend un poids de 1 pour la query
-                h_train_id2score[message_label] += (1 * (h_word2did2tf[word][message_label] * h_word2IDF[word])) / h_norm[message_label]
-
-
-   
+                h_train_id2score[message_label] += (1 * (
+                    h_word2did2tf[word][message_label] * h_word2IDF[word])) / h_norm[message_label]
 
     if len(h_train_id2score) < k:
         print('Warning: not enough neighbours')
@@ -260,21 +251,44 @@ def Vote(t_knn):
 
     h_class2vote = defaultdict(int)
 
-    # TODO
+    for knn in t_knn:
+        h_class2vote[h_train_id2real_class[knn]] += 1
 
+    predicted = sorted(list(h_class2vote.keys()),
+                       key=lambda nb: -h_class2vote[nb])[0:1]
     return predicted
 
 
-h_test_id2predicted_class = {}
-h_test_id2real_class = {}
+def Run_Test():
+    # read the test data and for each message,
+    # find the nearest_neighbors with Find_closest_neighbours()
+    # and make them vote for their category with Vote()
+    test_id2predicted_class = {}
 
-# TODO
-# read the test data and for each message,
-# find the nearest_neighbors with Find_closest_neighbours()
-# and make them vote for their category with Vote()
-sorted_msgs_list = Find_closest_neighbours('not familiar at all with the format')
-print(sorted_msgs_list)
-print(t_messages['msg_6644'])
+    test_messages, test_id2real_class = Parse_Data(args.file_test)
+
+    test_message_number = len(test_messages)
+    print(test_message_number)
+
+    test_count = 0
+    test_count_limit = 100
+    for message_label in test_messages:
+        test_count += 1
+        if test_count == test_count_limit:
+            break
+        t_message_lines = test_messages[message_label]
+        message = ''
+        message_words = []
+        for line in t_message_lines:
+            message_words = message_words + (Tokenize(line))
+        sorted_msgs_list = Find_closest_neighbours(message_words)
+        predicted_class = Vote(sorted_msgs_list)
+        test_id2predicted_class[message_label] = predicted_class
+    return test_id2predicted_class, test_id2real_class
+
+
+h_test_id2predicted_class, h_test_id2real_class = Run_Test()
+# print(sorted_msgs_list)
 
 ##################################################################
 Info('Evaluation')
