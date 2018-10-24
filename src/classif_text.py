@@ -26,6 +26,8 @@ import getopt
 import random
 import operator
 import pickle
+import itertools
+
 #import cPickle as pickle
 import math
 #import psyco
@@ -227,7 +229,7 @@ print(h_norm['msg_11313'])
 Info('Reading test data')
 
 
-def Find_closest_neighbours(text, k=10):
+def Find_closest_neighbours(text, k=11):
     # find the k nearest neighbour (cosine with TF.IDF) of a test message
 
     h_train_id2score = defaultdict(lambda: 0)
@@ -271,11 +273,11 @@ def Run_Test():
     print(test_message_number)
 
     test_count = 0
-    test_count_limit = 100
+    test_count_limit = 500
     for message_label in test_messages:
-        test_count += 1
         if test_count == test_count_limit:
             break
+        test_count += 1
         t_message_lines = test_messages[message_label]
         message = ''
         message_words = []
@@ -283,12 +285,15 @@ def Run_Test():
             message_words = message_words + (Tokenize(line))
         sorted_msgs_list = Find_closest_neighbours(message_words)
         predicted_class = Vote(sorted_msgs_list)
-        test_id2predicted_class[message_label] = predicted_class
+        test_id2predicted_class[message_label] = predicted_class[0]
     return test_id2predicted_class, test_id2real_class
 
 
-h_test_id2predicted_class, h_test_id2real_class = Run_Test()
-# print(sorted_msgs_list)
+h_test_id2predicted_class, h_test_id2real_class_temp = Run_Test()
+h_test_id2real_class = dict(itertools.islice(h_test_id2real_class_temp.items(), 500))
+
+print(h_test_id2predicted_class)
+print(h_test_id2real_class)
 
 ##################################################################
 Info('Evaluation')
