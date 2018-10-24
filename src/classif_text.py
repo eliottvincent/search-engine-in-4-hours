@@ -27,7 +27,7 @@ import random
 import operator
 import pickle
 #import cPickle as pickle
-from math import *
+import math
 #import psyco
 # psyco.full()
 fnull = open(os.devnull, 'w')
@@ -55,6 +55,7 @@ def Info(output='', ending='\n'):  # print(output, file=sys.stderr)
 # variables
 separator = '%#%#%#%#\n'
 message_class = 'class_20ng:'
+message_number = 0
 
 
 #########################################
@@ -131,12 +132,11 @@ h_train_id2real_class = {}
 with codecs.open(args.file_train,'r', 'utf-8') as fp:
     t_messages = {}
     message = []
-    message_number = 0
     message_label = ''
 
     for line in fp:
         current_message_class = ''
-        m = re.search('^class_20ng:.',line)
+        m = re.search('^class_20ng: (.+)',line)
         
 
         if m is not None:
@@ -172,22 +172,19 @@ with codecs.open(args.file_train,'r', 'utf-8') as fp:
             #print(message_words)
 
         for message_word in message_words:
-            if not message_word in t_stopwords:
-                h_word2did2tf[message_word][message_label] += 1
+            # Removing stopwords form inverted file
+            h_word2did2tf[message_word][message_label] += 1
 
 
-    print(h_word2did2tf['number'])
-
-        # message_words = Tokenize()
-        # for message_word in message_words:
-        #     if not message_word in stopwords:
-        #         h_word2did2tf[message_label][message_word] += 1
+    #print(h_word2did2tf['number'])
+    print(h_train_id2real_class['msg_8305'])
 
 
 ##################################################################
 Info('Removing stopwords form inverted file')
-
-# TODO
+for stopword in t_stopwords: 
+    if stopword in h_word2did2tf:
+        del h_word2did2tf[stopword]
 
 
 ##################################################################
@@ -195,13 +192,28 @@ Info('Computing IDF for each word')
 
 h_word2IDF = {}
 # TODO
+for word in h_word2did2tf:
+    nb_messages_for_word = 0
+    for msg in h_word2did2tf[word]:
+        nb_messages_for_word += 1
+    #print ('Number of messages for ' + word + ' : {}'.format(nb_messages_for_word))
+    h_word2IDF[word] = math.log10(message_number/nb_messages_for_word)
 
+print(h_word2IDF)
 
 ##################################################################
 Info('Computing norm for each message')
 
-h_norm = defaultdict(int)
+h_norm = defaultdict(float)
 # TODO
+
+for word in h_word2did2tf: 
+    # Computes TF . IDF for each word
+    for message_label in h_word2did2tf[word]:
+        h_norm[message_label] += math.pow(h_word2did2tf[word][message_label] * h_word2IDF[word],2)
+
+for message_label in h_norm:
+    h_norm[message_label] = math.sqrt(h_norm[message_label])  
 
 
 ##################################################################
