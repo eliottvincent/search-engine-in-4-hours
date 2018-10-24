@@ -51,6 +51,7 @@ def Info(output='', ending='\n'):  # print(output, file=sys.stderr)
 #######################################
 # files
 
+
 #######################################
 # variables
 separator = '%#%#%#%#\n'
@@ -94,6 +95,17 @@ args = parser.parse_args()
 ################################################################################
 
 
+def ComputeIdf(InversedDictionary):
+    word2IDF = {}
+    for word in InversedDictionary:
+        nb_messages_for_word = 0
+        for msg in InversedDictionary[word]:
+            nb_messages_for_word += 1
+        #print ('Number of messages for ' + word + ' : {}'.format(nb_messages_for_word))
+        word2IDF[word] = math.log10(message_number / nb_messages_for_word)
+    return word2IDF
+
+
 ################################################################################
 ################################################################################
 ##                                                                            ##
@@ -102,7 +114,7 @@ args = parser.parse_args()
 ################################################################################
 ################################################################################
 
-##################################################################
+    ##################################################################
 Info('Reading stop word file')
 
 t_stopwords = []
@@ -128,16 +140,15 @@ h_word2did2tf = defaultdict(lambda: defaultdict(lambda: 0))
 h_train_id2real_class = {}
 # TODO read the training data
 #str_test = "hello  world\n my name, is thomas."
-#print(Tokenize(str_test))
-with codecs.open(args.file_train,'r', 'utf-8') as fp:
+# print(Tokenize(str_test))
+with codecs.open(args.file_train, 'r', 'utf-8') as fp:
     t_messages = {}
     message = []
     message_label = ''
 
     for line in fp:
         current_message_class = ''
-        m = re.search('^class_20ng: (.+)',line)
-        
+        m = re.search('^class_20ng: (.+)', line)
 
         if m is not None:
             # Classe trouvée - Début de message
@@ -159,7 +170,7 @@ with codecs.open(args.file_train,'r', 'utf-8') as fp:
 
     #fp_str = fp.read()
     #t_messages = fp_str.split(separator)
-    
+
     # Nombre de messages
     # print(len(t_messages))
     # message_number = 0
@@ -169,20 +180,19 @@ with codecs.open(args.file_train,'r', 'utf-8') as fp:
         message_words = []
         for line in t_message_lines:
             message_words = message_words + (Tokenize(line))
-            #print(message_words)
+            # print(message_words)
 
         for message_word in message_words:
             # Removing stopwords form inverted file
             h_word2did2tf[message_word][message_label] += 1
 
-
-    #print(h_word2did2tf['number'])
+    # print(h_word2did2tf['number'])
     print(h_train_id2real_class['msg_8305'])
 
 
 ##################################################################
 Info('Removing stopwords form inverted file')
-for stopword in t_stopwords: 
+for stopword in t_stopwords:
     if stopword in h_word2did2tf:
         del h_word2did2tf[stopword]
 
@@ -190,16 +200,9 @@ for stopword in t_stopwords:
 ##################################################################
 Info('Computing IDF for each word')
 
-h_word2IDF = {}
-# TODO
-for word in h_word2did2tf:
-    nb_messages_for_word = 0
-    for msg in h_word2did2tf[word]:
-        nb_messages_for_word += 1
-    #print ('Number of messages for ' + word + ' : {}'.format(nb_messages_for_word))
-    h_word2IDF[word] = math.log10(message_number/nb_messages_for_word)
-
+h_word2IDF = ComputeIdf(h_word2did2tf)
 print(h_word2IDF)
+
 
 ##################################################################
 Info('Computing norm for each message')
@@ -207,13 +210,16 @@ Info('Computing norm for each message')
 h_norm = defaultdict(float)
 # TODO
 
-for word in h_word2did2tf: 
+for word in h_word2did2tf:
     # Computes TF . IDF for each word
     for message_label in h_word2did2tf[word]:
-        h_norm[message_label] += math.pow(h_word2did2tf[word][message_label] * h_word2IDF[word],2)
+        h_norm[message_label] += math.pow(h_word2did2tf[word]
+                                          [message_label] * h_word2IDF[word], 2)
 
 for message_label in h_norm:
-    h_norm[message_label] = math.sqrt(h_norm[message_label])  
+    h_norm[message_label] = math.sqrt(h_norm[message_label])
+
+print(len(h_norm))
 
 
 ##################################################################
