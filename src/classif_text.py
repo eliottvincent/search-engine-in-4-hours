@@ -102,7 +102,9 @@ args = parser.parse_args()
 Info('Reading stop word file')
 
 t_stopwords = []
-# TO DO
+with codecs.open('stop_words.en.txt', 'r', 'utf-8') as file:
+    t_stopwords = file.read().splitlines()
+print('Stop word file has been loaded ({} words)'.format(len(t_stopwords)))
 
 
 ##################################################################
