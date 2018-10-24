@@ -95,7 +95,7 @@ args = parser.parse_args()
 ################################################################################
 
 
-def ComputeIdf(InversedDictionary):
+def Compute_Idf(InversedDictionary):
     word2IDF = {}
     for word in InversedDictionary:
         nb_messages_for_word = 0
@@ -106,6 +106,20 @@ def ComputeIdf(InversedDictionary):
     return word2IDF
 
 
+def Compute_Norm(word2did2tf, word2IDF):
+    norm = defaultdict(float)
+
+    for word in word2did2tf:
+        # Computes TF . IDF for each word
+        for message_label in word2did2tf[word]:
+            norm[message_label] += math.pow(word2did2tf[word]
+                                            [message_label] * word2IDF[word], 2)
+
+    for message_label in norm:
+        norm[message_label] = math.sqrt(norm[message_label])
+    return norm
+
+
 ################################################################################
 ################################################################################
 ##                                                                            ##
@@ -113,7 +127,6 @@ def ComputeIdf(InversedDictionary):
 ##                                                                            ##
 ################################################################################
 ################################################################################
-
     ##################################################################
 Info('Reading stop word file')
 
@@ -200,26 +213,17 @@ for stopword in t_stopwords:
 ##################################################################
 Info('Computing IDF for each word')
 
-h_word2IDF = ComputeIdf(h_word2did2tf)
+h_word2IDF = Compute_Idf(h_word2did2tf)
 print(h_word2IDF)
 
 
 ##################################################################
 Info('Computing norm for each message')
 
-h_norm = defaultdict(float)
-# TODO
-
-for word in h_word2did2tf:
-    # Computes TF . IDF for each word
-    for message_label in h_word2did2tf[word]:
-        h_norm[message_label] += math.pow(h_word2did2tf[word]
-                                          [message_label] * h_word2IDF[word], 2)
-
-for message_label in h_norm:
-    h_norm[message_label] = math.sqrt(h_norm[message_label])
+h_norm = Compute_Norm(h_word2did2tf, h_word2IDF)
 
 print(len(h_norm))
+print(h_norm['msg_11313'])
 
 
 ##################################################################
