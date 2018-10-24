@@ -137,9 +137,9 @@ def Parse_Data(data_file):
             if m is not None:
                 # Classe trouvée - Début de message
                 message_label = 'msg_{}'.format(message_nb)
-
-                t_class_str = line.split('class_20ng: ')
-                h_id2real_class[message_label] = t_class_str[1]
+                h_id2real_class[message_label] = m.group(1)
+                #t_class_str = line.split('class_20ng: ')
+                #h_id2real_class[message_label] = t_class_str[1]
 
             elif line == separator:
                 # Séparateur trouvé - Fin de message
@@ -238,8 +238,9 @@ def Find_closest_neighbours(text, k=11):
         if word in h_word2did2tf:
             for message_label in h_word2did2tf[word]:
                 # On prend un poids de 1 pour la query
-                h_train_id2score[message_label] += (1 * (
-                    h_word2did2tf[word][message_label] * h_word2IDF[word])) / h_norm[message_label]
+                h_train_id2score[message_label] += ((
+                    h_word2did2tf[word][message_label] * h_word2IDF[word]) *
+                    h_word2IDF[word]) / h_norm[message_label]
 
     if len(h_train_id2score) < k:
         print('Warning: not enough neighbours')
@@ -257,7 +258,7 @@ def Vote(t_knn):
         h_class2vote[h_train_id2real_class[knn]] += 1
 
     predicted = sorted(list(h_class2vote.keys()),
-                       key=lambda nb: -h_class2vote[nb])[0:1]
+                       key=lambda nb: -h_class2vote[nb])[0]
     return predicted
 
 
@@ -273,7 +274,7 @@ def Run_Test():
     print(test_message_number)
 
     test_count = 0
-    test_count_limit = 500
+    test_count_limit = 750
     for message_label in test_messages:
         if test_count == test_count_limit:
             break
@@ -285,12 +286,12 @@ def Run_Test():
             message_words = message_words + (Tokenize(line))
         sorted_msgs_list = Find_closest_neighbours(message_words)
         predicted_class = Vote(sorted_msgs_list)
-        test_id2predicted_class[message_label] = predicted_class[0]
+        test_id2predicted_class[message_label] = predicted_class
     return test_id2predicted_class, test_id2real_class
 
 
 h_test_id2predicted_class, h_test_id2real_class_temp = Run_Test()
-h_test_id2real_class = dict(itertools.islice(h_test_id2real_class_temp.items(), 500))
+h_test_id2real_class = dict(itertools.islice(h_test_id2real_class_temp.items(), 750))
 
 print(h_test_id2predicted_class)
 print(h_test_id2real_class)
