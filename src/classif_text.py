@@ -274,10 +274,7 @@ def Run_Test():
     print(test_message_number)
 
     test_count = 0
-    test_count_limit = 750
     for message_label in test_messages:
-        if test_count == test_count_limit:
-            break
         test_count += 1
         t_message_lines = test_messages[message_label]
         message = ''
@@ -290,8 +287,10 @@ def Run_Test():
     return test_id2predicted_class, test_id2real_class
 
 
-h_test_id2predicted_class, h_test_id2real_class_temp = Run_Test()
-h_test_id2real_class = dict(itertools.islice(h_test_id2real_class_temp.items(), 750))
+h_test_id2predicted_class, h_test_id2real_class = Run_Test()
+# h_test_id2predicted_class, h_test_id2real_class_temp = Run_Test()
+# h_test_id2real_class = dict(itertools.islice(
+#    h_test_id2real_class_temp.items(), 500))
 
 print(h_test_id2predicted_class)
 print(h_test_id2real_class)
