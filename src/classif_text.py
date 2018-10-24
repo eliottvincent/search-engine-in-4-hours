@@ -227,7 +227,7 @@ print(h_norm['msg_11313'])
 Info('Reading test data')
 
 
-def Find_closest_neighbours(text, k=1):
+def Find_closest_neighbours(text, k=10):
     # find the k nearest neighbour (cosine with TF.IDF) of a test message
 
     h_train_id2score = defaultdict(lambda: 0)
