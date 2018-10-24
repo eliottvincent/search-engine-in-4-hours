@@ -236,6 +236,17 @@ def Find_closest_neighbours(text, k=1):
 
     h_train_id2score = defaultdict(lambda: 0)
     # TO DO : compute the cosine for the training messages
+    t_words = Tokenize(text)
+    print(t_words)
+
+    for word in h_word2did2tf:
+        if word in t_words:
+            for message_label in h_word2did2tf[word]:
+                # On prend un poids de 1 pour la query
+                h_train_id2score[message_label] += (1 * (h_word2did2tf[word][message_label] * h_word2IDF[word])) / h_norm[message_label]
+
+
+   
 
     if len(h_train_id2score) < k:
         print('Warning: not enough neighbours')
@@ -261,7 +272,9 @@ h_test_id2real_class = {}
 # read the test data and for each message,
 # find the nearest_neighbors with Find_closest_neighbours()
 # and make them vote for their category with Vote()
-
+sorted_msgs_list = Find_closest_neighbours('not familiar at all with the format')
+print(sorted_msgs_list)
+print(t_messages['msg_6644'])
 
 ##################################################################
 Info('Evaluation')
